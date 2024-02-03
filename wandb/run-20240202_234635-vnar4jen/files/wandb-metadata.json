@@ -1,0 +1,37 @@
+{
+    "os": "macOS-14.1.1-arm64-arm-64bit",
+    "python": "3.10.10",
+    "heartbeatAt": "2024-02-03T04:46:36.789045",
+    "startedAt": "2024-02-03T04:46:35.982061",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/Users/bradyphelps/Desktop/Classes/Spring_2024/CS4900/Code/programs/PA1/forked_man/Wesley-Tansey-RL-TicTacToe/tictactoe.py",
+    "codePathLocal": "tictactoe.py",
+    "codePath": "tictactoe.py",
+    "git": {
+        "remote": "https://github.com/BP-2/Wesley-Tansey-RL-TicTacToe.git",
+        "commit": "f0c975a3ad5543b8968c072e22f5ea2bbdcc9e5d"
+    },
+    "email": "bp309420@ohio.edu",
+    "root": "/Users/bradyphelps/Desktop/Classes/Spring_2024/CS4900/Code/programs/PA1/forked_man/Wesley-Tansey-RL-TicTacToe",
+    "host": "Bradys-MBP.lan",
+    "username": "bradyphelps",
+    "executable": "/Library/Frameworks/Python.framework/Versions/3.10/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "disk": {
+        "/": {
+            "total": 1858.1917190551758,
+            "used": 12.534828186035156
+        }
+    },
+    "gpuapple": {
+        "type": "arm",
+        "vendor": "Apple"
+    },
+    "memory": {
+        "total": 16.0
+    }
+}

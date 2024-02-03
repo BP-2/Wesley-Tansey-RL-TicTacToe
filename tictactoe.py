@@ -3,7 +3,6 @@
 """
 Reference implementation of the Tic-Tac-Toe value function learning agent described in Chapter 1 of "Reinforcement Learning: An Introduction" by Sutton and Barto.
 
-
 The agent contains a lookup table that maps states to values,
 where initial values are 1 for a win, 0 for a draw or loss, and 0.5 otherwise.
 At every move, the agent chooses either the maximum-value move (greedy) or,
@@ -21,7 +20,6 @@ for whether it is playing to a win or a draw. Even more to the point, the agent 
 where it basically has a single path that it wants to take to reach a winning state. If the path is blocked
 by the opponent, the values will then usually all become 0.5 and the player is effectively moving randomly.
 
-
 ## License
 - Created by Wesley Tansey, 1/21/2013
 - Online: https://github.com/Naereen/Wesley-Tansey-RL-TicTacToe
@@ -33,7 +31,7 @@ import random
 from copy import deepcopy
 import csv
 import matplotlib.pyplot as plt
-
+import wandb
 
 # States as integer : manual coding
 EMPTY = 0
@@ -209,12 +207,19 @@ class Agent(object):
     def winnerval(self, winner):
         """ Return the value of the winner (0, .5, 1, or self.lossval)."""
         if winner == self.player:
+            #wandb.log({"result": "win", "player": "AI", "probability": 1})
+            wandb.log({"training-result": "Win", "probability": 1})
             return 1
         elif winner == EMPTY:
             return 0.5
         elif winner == DRAW:
+            #wandb.log({"training-result": "Draw", "probability": 1}, commit=False, media={"training-result": "text"})
+
+            #wandb.log({"result": "Draw", "player": "AI", "probability": 1})
             return 0
         else:
+            #wandb.log({"training-result": "Lose", "probability": 1}, commit=False, media={"training-result": "text"})
+            #wandb.log({"result": "loss", "player": "AI", "probability": 1})
             return self.lossval
 
     def printvalues(self):
@@ -296,8 +301,10 @@ def measure_performance_vs_random(agent1, agent2):
         winner = play(agent1, r2)
         if winner == PLAYER_X:
             probs[0] += 1.0 / games
+            wandb.log({"result": "Win", "player": "USER", "probability": probs[0]})
         elif winner == PLAYER_O:
             probs[1] += 1.0 / games
+            wandb.log({"result": "win", "player": "AI", "probability": probs[1]})
         else:
             probs[2] += 1.0 / games
     for i in range(games):
@@ -317,12 +324,6 @@ def measure_performance_vs_random(agent1, agent2):
 
 def measure_performance_vs_each_other(agent1, agent2):
     """ A naive way to measure performance of two agents vs each other."""
-    # epsilon1 = agent1.epsilon
-    # epsilon2 = agent2.epsilon
-    # agent1.epsilon = 0
-    # agent2.epsilon = 0
-    # agent1.learning = False
-    # agent2.learning = False
     probs = [0, 0, 0]
     games = 100
     for i in range(games):
@@ -333,52 +334,41 @@ def measure_performance_vs_each_other(agent1, agent2):
             probs[1] += 1.0 / games
         else:
             probs[2] += 1.0 / games
-    # agent1.epsilon = epsilon1
-    # agent2.epsilon = epsilon2
-    # agent1.learning = True
-    # agent2.learning = True
     return probs
 
 
-if __name__ == "__main__":
+def main():
     p1 = Agent(1, lossval=-1)
     p2 = Agent(2, lossval=-1)
     r1 = Agent(1, learning=False)
     r2 = Agent(2, learning=False)
     r1.epsilon = 1
     r2.epsilon = 1
-    series = ['P1-Win', 'P1-Lose', 'P1-Draw', 'P2-Win', 'P2-Lose', 'P2-Draw']
-    # series = ['P1-Win', 'P2-Win', 'Draw']
-    colors = ['r', 'b', 'g', 'c', 'm', 'b']
-    markers = ['+', '.', 'o', '*', '^', 's']
-    f = open('results.csv', 'wb')
-    writer = csv.writer(f)
-    writer.writerow(series)
-    perf = [[] for _ in range(len(series) + 1)]
-    for i in range(10000):
-        if i % 10 == 0:
-            print('Game: {0}'.format(i))
-            probs = measure_performance_vs_random(p1, p2)
-            writer.writerow(probs)
-            f.flush()
-            perf[0].append(i)
-            for idx, x in enumerate(probs):
-                perf[idx + 1].append(x)
+
+    # Initialize Weights and Biases
+    wandb.init(project="TIC-TAC-TOE", config={"epsilon": p1.epsilon, "alpha": p1.alpha, "lossval": p1.lossval})
+
+    # Number of episodes
+    num_episodes = 100
+
+    for episode in range(num_episodes):
+        # Self-play for training
         winner = play(p1, p2)
         p1.episode_over(winner)
-        # winner = play(r1, p2)
         p2.episode_over(winner)
-    f.close()
-    for i in range(1, len(perf)):
-        plt.plot(perf[0], perf[i], label=series[i - 1], color=colors[i - 1])
-    plt.xlabel('Episodes')
-    plt.ylabel('Probability')
-    plt.title('RL Agent Performance vs. Random Agent\n({0} loss value, self-play)'.format(p1.lossval))
-    # plt.title('P1 Loss={0} vs. P2 Loss={1}'.format(p1.lossval, p2.lossval))
-    plt.legend()
-    # plt.show()
-    # plt.savefig('p1loss{0}vsp2loss{1}.png'.format(p1.lossval, p2.lossval))
-    plt.savefig('selfplay_random_{0}loss.png'.format(p1.lossval))
+
+        if episode % 10 == 0:
+        # Measure performance against a random agent every 10 episodes
+            perf_vs_random = measure_performance_vs_random(p1, r2)
+            #wandb.log({"P1 vs Random": perf_vs_random, "episode": episode})
+
+            # Measure performance against each other every 10 episodes
+            perf_vs_each_other = measure_performance_vs_each_other(p1, p2)
+            #wandb.log({"P1 vs P2": perf_vs_each_other, "episode": episode})
+
+    # Visualize the learned values after training
+    p1.printvalues()
+
     while True:
         p2.verbose = True
         p1 = Human(1)
@@ -386,4 +376,6 @@ if __name__ == "__main__":
         p1.episode_over(winner)
         p2.episode_over(winner)
 
-# End of tictactoe.py
+
+if __name__ == "__main__":
+    main()
